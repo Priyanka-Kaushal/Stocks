@@ -36,6 +36,28 @@ const allRawMaterialStock = async(req, res) => {
 }
 
 
+const individualRawmaterial = async(req, res) => {
+  try{
+   const getRawMaterial =  await RawMaterial.findById(req.params.id);
+
+   if (!getRawMaterial) {
+      return res.status(404).json({
+        success: false,
+        message: "raw material not found.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "raw material retrieved successfully.",
+      data: getRawMaterial,
+    });
+  }catch(error){
+
+    res.status(500).json({success: false, message: error.message})
+  }
+}
+
 const updateRawMaterial = async (req, res) => {
   try {
     const { name, status } = req.body;
@@ -77,4 +99,4 @@ const deleteRawmaterial = async(req, res) => {
   }
 }
 
-module.exports = { rawMaterialStock, allRawMaterialStock, updateRawMaterial, deleteRawmaterial }; 
+module.exports = { rawMaterialStock, allRawMaterialStock, individualRawmaterial, updateRawMaterial, deleteRawmaterial }; 

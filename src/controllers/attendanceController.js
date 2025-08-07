@@ -3,17 +3,47 @@ const Attendance = require("../models/attendanceSchema.js");
 
 const userAttendance = async (req, res) => {
   try {
-    const { userId, status } = req.body;
+    const { userId, status, date } = req.body;
 
     if (!userId || !status) {
-      return res
-        .status(400)
-        .json({ success: false, message: "userId and status are required." });
+      return res.status(400).json({
+        success: false,
+        message: "userId and status are required.",
+      });
+    }
+
+    if (!["present", "absent"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be 'present' or 'absent'.",
+      });
+    }
+
+    const inputDate = date ? new Date(date) : new Date();
+
+    
+    const normalizedDate = new Date(
+      inputDate.getFullYear(),
+      inputDate.getMonth(),
+      inputDate.getDate()
+    );
+
+    const existingRecord = await Attendance.findOne({
+      userId,
+      date: normalizedDate,
+    });
+
+    if (existingRecord) {
+      return res.status(400).json({
+        success: false,
+        message: "Attendance already marked for this date.",
+      });
     }
 
     const attendance = new Attendance({
       userId,
       status,
+      date: normalizedDate,
     });
 
     await attendance.save();
@@ -27,6 +57,7 @@ const userAttendance = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const getAllAttendance = async (req, res) => {
   try {
@@ -43,6 +74,32 @@ const getAllAttendance = async (req, res) => {
     });
   }
 };
+
+const getAttendanceById = async (req, res) => {
+  try {
+    const attendance = await Attendance.findById(req.params.id);
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: "Attendance not found.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Attendance retrieved successfully.",
+      data: attendance,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 const updateAttendance = async (req, res) => {
   try {
@@ -100,6 +157,7 @@ const deleteAttendance = async (req, res) => {
 module.exports = {
   userAttendance,
   getAllAttendance,
+  getAttendanceById,
   updateAttendance,
   deleteAttendance,
 };

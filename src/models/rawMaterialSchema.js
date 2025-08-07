@@ -15,7 +15,9 @@ const rawMaterialSchema = new mongoose.Schema({
     enum: ["active", "inactive"], 
     default: "active",           
   },
-});
+},
+  { timestamps: true } 
+);
 
 const RawMaterial = mongoose.model("RawMaterial", rawMaterialSchema);
 module.exports = RawMaterial;

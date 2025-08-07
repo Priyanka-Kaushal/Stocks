@@ -28,6 +28,23 @@ const stocks = await Stock.find();
   }
 };
 
+const individualStock = async(req, res) => {
+  try{
+    const getStock = await Stock.findById(req.params.id);
+
+    if(!getStock){
+      return res.status(400).json({success: false, message: "Stock Not found"})
+    }
+    res.status(200).json({
+  success: true,
+  message: "Stock retrieved successfully.",
+  data: getStock
+});
+  }catch(error){
+    res.status(500).json({success: false, message: error.message})
+  }
+}
+
 const updateStock =  async(req, res) => {
  try{
     const updatedStock = await Stock.findByIdAndUpdate(req.params.id, req.body, {
@@ -59,4 +76,4 @@ const deleteStock = async(req, res) => {
         res.status().json({success: false, message: error.message});
     }
 }
-module.exports = {createStock, getAllStock, updateStock, deleteStock};
+module.exports = {createStock, getAllStock, individualStock, updateStock, deleteStock};
