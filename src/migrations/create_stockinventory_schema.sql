@@ -1,0 +1,12 @@
+CREATE SCHEMA IF NOT EXISTS inventory;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS inventory.stock (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  quantity INTEGER NOT NULL,
+  unit VARCHAR(10) NOT NULL,
+  category VARCHAR(255),
+  price NUMERIC(10, 2)
+);
+

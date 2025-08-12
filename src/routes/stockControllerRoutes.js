@@ -1,13 +1,49 @@
-const express = require("express");
+// import express from "express";
+// import {
+//   createStock,
+//   createStockSupabase,
+//   getAllStock,
+//   individualStock,
+//   updateStock,
+//   deleteStock,
+// } from "../controllers/stockController.js";
+
+// const router = express.Router();
+
+// router.post("/add-stock", createStock);
+
+// router.post("/add-stock-supa", createStocksupabase);
+
+
+// // router.get("/stock-list", getAllStock);
+
+// // router.get("/:id", individualStock);
+
+// // router.put("/stock/:id", updateStock);
+
+// // router.delete("/:id", deleteStock);
+import express from "express";
+import {
+  createStock,
+  createStockSupabase,
+  getAllStock,
+  individualStock,
+  updateStock,
+  deleteStock,
+} from "../controllers/stockController.js";
+
 const router = express.Router();
-const {
-  createStock, getAllStock,individualStock,  updateStock, deleteStock
-} = require("../controllers/stockController");
 
-router.post("/create_stock", createStock);
-router.get("/all_stock", getAllStock);
-router.get("/getStock/:id", individualStock);
-router.put("/update/:id",updateStock);
-router.delete("/delete/:id", deleteStock);
+router.post("/add-stock", createStock);
 
-module.exports = router;
+router.post("/add-stock-supa", createStockSupabase);
+
+router.get("/stock-list", getAllStock);
+
+router.get("/:id", individualStock);
+
+router.put("/stock/:id", updateStock);
+
+router.delete("/:id", deleteStock);
+
+export default router;

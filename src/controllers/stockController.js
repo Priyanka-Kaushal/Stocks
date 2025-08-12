@@ -1,79 +1,90 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const Stock = require("../models/stockSchema");
+import pool from '../utils/db.js';
 
+const SCHEMA_TABLE = 'inventory.stock';
 
-const createStock = async (req, res) => {
-  try {
-    const { name, quantity, unit, category, price, stock } = req.body;
-    console.log("Request Body:", req.body);
+export const createStock = async (req, res) => {
+  const { name, quantity, unit, category = null, price = null } = req.body;
 
-    const newStock = new Stock({ 
-        name, quantity, unit, category, price, stock 
+  if (!name || !quantity || !unit) {
+    return res.status(400).json({
+      success: false,
+      message: 'name, quantity and unit are required fields',
     });
-    await newStock.save();
+  }
 
-    res.status(201).json({ success: true, data: newStock });
+  try {
+    const result = await pool.query(
+      `INSERT INTO ${SCHEMA_TABLE} (name, quantity, unit, category, price)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [name, quantity, unit, category, price]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
 
-const getAllStock = async(req, res) => {
-    try{
-const stocks = await Stock.find();
- res.status(200).json({ success: true, data: stocks });
-    }catch (error) {
+
+export const getAllStock = async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM ${SCHEMA_TABLE} ORDER BY id ASC`);
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const individualStock = async(req, res) => {
-  try{
-    const getStock = await Stock.findById(req.params.id);
-
-    if(!getStock){
-      return res.status(400).json({success: false, message: "Stock Not found"})
-    }
-    res.status(200).json({
-  success: true,
-  message: "Stock retrieved successfully.",
-  data: getStock
-});
-  }catch(error){
-    res.status(500).json({success: false, message: error.message})
+export const individualStock = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query(`SELECT * FROM ${SCHEMA_TABLE} WHERE id = $1`, [id]);
+    if (result.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Stock not found' });
+    res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
-const updateStock =  async(req, res) => {
- try{
-    const updatedStock = await Stock.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-
-    if (!updatedStock) {
-      return res.status(404).json({ success: false, message: "Stock not found" });
+export const updateStock = async (req, res) => {
+  const id = req.params.id;
+  const { name, quantity, unit, price } = req.body;  
+  try {
+    const result = await pool.query(
+      `UPDATE ${SCHEMA_TABLE} SET name = $1, quantity = $2, unit = $3, price = $4 WHERE id = $5 RETURNING *`,
+      [name, quantity, unit, price, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Stock not found' });
     }
-
-    res.status(200).json({ success: true, data: updatedStock });
- }catch(error){
- res.status(500).json({success: false, message: error.message});
-
- }
-}
+    res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 
-const deleteStock = async(req, res) => {
-    try{
-    const deletedStock = await Stock.findByIdAndDelete(req.params.id);
+export const deleteStock = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool.query(
+      `DELETE FROM ${SCHEMA_TABLE} WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Stock not found' });
+    res.status(200).json({ success: true, message: 'Stock deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    if (!deletedStock) {
-      return res.status(404).json({ success: false, message: "Stock not found" });
-    }
-
-    res.status(200).json({ success: true, message: "Stock deleted successfully" });
-    }catch(error){
-        res.status().json({success: false, message: error.message});
-    }
-}
-module.exports = {createStock, getAllStock, individualStock, updateStock, deleteStock};
+// Optional: Supabase version of createStock
+export const createStockSupabase = async (req, res) => {
+  const { name, quantity } = req.body;
+  const { data, error } = await supabase.from('stock').insert([{ name, quantity }]);
+  if (error) return res.status(400).json({ success: false, message: error.message });
+  res.status(201).json({ success: true, data });
+};

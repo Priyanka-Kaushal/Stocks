@@ -1,102 +1,128 @@
-const RawMaterial = require("../models/rawMaterialSchema");
+import pool from '../utils/db.js';
 
-const rawMaterialStock = async (req, res) => {
+export const rawMaterialStock = async (req, res) => {
   try {
     const { name, status } = req.body;
-    const image = req.file ? req.file.path : null;
+    console.log("req.body:", req.body);
 
+
+
+    const image = req.file ? req.file.path : null;
+console.log("req.file:", req.file);
     if (!name || !image) {
       return res.status(400).json({ success: false, message: "Name and image are required." });
     }
 
-    const newRawMaterial = new RawMaterial({
-      name,
-      image,
-      status: status || "active",
-    });
+    const insertQuery = `
+      INSERT INTO inventory.raw_materials (name, image, status)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
 
-    await newRawMaterial.save();
+    const values = [name, image, status || 'active'];
 
-    res.status(200).json({ success: true, data: newRawMaterial });
+    const result = await pool.query(insertQuery, values);
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Raw material with this name already exists.' });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+export const allRawMaterialStock = async (req, res) => {
+  try {
+    const selectQuery = `SELECT * FROM inventory.raw_materials ORDER BY created_at DESC`;
+    const result = await pool.query(selectQuery);
+    res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
 
-const allRawMaterialStock = async(req, res) => {
- try{
-   
-  const allRawMaterialFetch = await RawMaterial.find();
-  res.status(200).json({success: true, data : allRawMaterialFetch});
+export const individualRawmaterial = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const selectQuery = `SELECT * FROM inventory.raw_materials WHERE id = $1`;
+    const result = await pool.query(selectQuery, [id]);
 
- }catch(error){
-   res.status(500).json({success: false, message: error.message});
- }
-}
-
-
-const individualRawmaterial = async(req, res) => {
-  try{
-   const getRawMaterial =  await RawMaterial.findById(req.params.id);
-
-   if (!getRawMaterial) {
-      return res.status(404).json({
-        success: false,
-        message: "raw material not found.",
-      });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Raw material not found.' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "raw material retrieved successfully.",
-      data: getRawMaterial,
-    });
-  }catch(error){
-
-    res.status(500).json({success: false, message: error.message})
+    res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
-const updateRawMaterial = async (req, res) => {
+
+export const updateRawMaterial = async (req, res) => {
   try {
+    const { id } = req.params;
     const { name, status } = req.body;
     const image = req.file ? req.file.path : undefined;
 
-    const updatedFields = {};
+    const fields = [];
+    const values = [];
+    let idx = 1;
 
-    if (name) updatedFields.name = name;
-    if (status) updatedFields.status = status;
-    if (image) updatedFields.image = image;
+    if (name) {
+      fields.push(`name = $${idx++}`);
+      values.push(name);
+    }
+    if (status) {
+      fields.push(`status = $${idx++}`);
+      values.push(status);
+    }
+    if (image) {
+      fields.push(`image = $${idx++}`);
+      values.push(image);
+    }
+    fields.push(`updated_at = NOW()`);
 
-    const rawMaterialUpdate = await RawMaterial.findByIdAndUpdate(
-      req.params.id,
-      updatedFields,
-      { new: true }
-    );
-
-    if (!rawMaterialUpdate) {
-      return res.status(404).json({ success: false, message: "Raw material not found" });
+    if (fields.length === 1) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
     }
 
-    res.status(200).json({ success: true, data: rawMaterialUpdate });
+    const updateQuery = `
+      UPDATE inventory.raw_materials SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *;
+    `;
+
+    values.push(id);
+
+    const result = await pool.query(updateQuery, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Raw material not found' });
+    }
+
+    res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Raw material with this name already exists.' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const deleteRawmaterial = async(req, res) => {
-  try{ 
-    const deleteRawMaterialFromStock = await RawMaterial.findByIdAndDelete(req.params.id);
 
-    if(!deleteRawMaterialFromStock){
-       return res.status(400).json({successs: false, message: "Raw Material in not found in the stock"})
+export const deleteRawmaterial = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleteQuery = `DELETE FROM inventory.raw_materials WHERE id = $1 RETURNING *;`;
+    const result = await pool.query(deleteQuery, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Raw material not found.' });
     }
-   
-    res.status(200).json({success: true, message:"Raw Material is deleted successfully"});
-  }catch(error){
-    res.status(500).json({success: false, message: error.message});
-  }
-}
 
-module.exports = { rawMaterialStock, allRawMaterialStock, individualRawmaterial, updateRawMaterial, deleteRawmaterial }; 
+    res.status(200).json({ success: true, message: 'Raw material deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

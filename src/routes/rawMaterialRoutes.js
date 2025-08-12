@@ -1,20 +1,29 @@
-const express = require("express");
+import express from 'express';
+import upload from '../middlewares/multerUploadImage.js';
+
+
+import {
+  rawMaterialStock,
+  allRawMaterialStock,
+  individualRawmaterial,
+  updateRawMaterial,
+  deleteRawmaterial,
+} from '../controllers/rawMaterialStockController.js';
+
 const router = express.Router();
-const upload = require("../middlewares/multerUploadImage");
-const {
-rawMaterialStock, allRawMaterialStock, individualRawmaterial, updateRawMaterial, deleteRawmaterial 
-} = require("../controllers/rawMaterialStockController");
 
+router.post('/createRawMaterial', (req, res, next) => {
+  console.log("Before multer");
+  next();
+}, upload.single('image'), (req, res, next) => {
+  console.log("After multer, req.file:", req.file);
+  next();
+}, rawMaterialStock);
 
-// updateRawMaterialStock, deleteRawMaterialStock
+router.get('/all_raw_material', allRawMaterialStock);
+router.get('/individualRawmaterial/:id', individualRawmaterial);
+router.put('/update/:id', upload.single('image'), updateRawMaterial);
+router.delete('/delete/:id', deleteRawmaterial);
 
-console.log(" rawMaterialStock controller loaded");
+export default router;
 
-
-router.post("/createRawMaterial", upload.single("image"), rawMaterialStock);
-router.get("/all_raw_material", allRawMaterialStock);
-router.get("/individualRawmaterial/:id", individualRawmaterial);
-router.put("/update/:id", upload.single("image"), updateRawMaterial);
-router.delete("/delete/:id", deleteRawmaterial);
-
-module.exports = router;

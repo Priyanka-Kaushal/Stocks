@@ -1,13 +1,13 @@
-const mongoose = require("mongoose");
+import pkg from 'pg';
+const { Pool } = pkg;
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected");
-  } catch (error) {
-    console.error("DB connection failed:", error.message);
-    process.exit(1);
-  }
-};
+const pool = new Pool({
+  user: 'postgres',
+  password: 'postgres',
+  host: 'localhost',
+  port: 5432,
+  database: 'stock_management',
+});
 
-module.exports = connectDB;
+export default pool;
+
