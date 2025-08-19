@@ -1,4 +1,9 @@
-import pool from '../utils/db.js';
+import pool from "../utils/db.js";
+
+const REQUIREMENT_FORMS_TABLE = "inventory.requirement_forms";
+const RAW_MATERIALS_TABLE = "inventory.raw_materials";
+const VEHICLES_TABLE = "inventory.vehicles";
+const STOCK_TABLE = "inventory.stock";
 
 export const createRequirementForm = async (req, res) => {
   const client = await pool.connect();
@@ -21,7 +26,7 @@ export const createRequirementForm = async (req, res) => {
       supervisorName,
     } = req.body;
 
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     let rawMaterialId = rawMaterialType;
     let vehicleId = vehicleType;
@@ -29,31 +34,33 @@ export const createRequirementForm = async (req, res) => {
 
     if (!rawMaterialId && rawMaterialTypeName) {
       const rmCheck = await client.query(
-        `SELECT id FROM raw_materials WHERE name = $1`,
+        `SELECT id FROM ${RAW_MATERIALS_TABLE} WHERE name = $1`,
         [rawMaterialTypeName]
       );
       if (rmCheck.rowCount > 0) {
         rawMaterialId = rmCheck.rows[0].id;
       } else {
         const rmInsert = await client.query(
-          `INSERT INTO raw_materials (name, image) VALUES ($1, $2) RETURNING id`,
-          [rawMaterialTypeName, req.files?.rawMaterialTypeImage?.[0]?.path || null]
+          `INSERT INTO ${RAW_MATERIALS_TABLE} (name, image) VALUES ($1, $2) RETURNING id`,
+          [
+            rawMaterialTypeName,
+            req.files?.rawMaterialTypeImage?.[0]?.path || null,
+          ]
         );
         rawMaterialId = rmInsert.rows[0].id;
       }
     }
 
-
     if (!vehicleId && vehicleTypeName) {
       const vehicleCheck = await client.query(
-        `SELECT id FROM vehicles WHERE name = $1`,
+        `SELECT id FROM ${VEHICLES_TABLE} WHERE name = $1`,
         [vehicleTypeName]
       );
       if (vehicleCheck.rowCount > 0) {
         vehicleId = vehicleCheck.rows[0].id;
       } else {
         const vehicleInsert = await client.query(
-          `INSERT INTO vehicles (name, image) VALUES ($1, $2) RETURNING id`,
+          `INSERT INTO ${VEHICLES_TABLE} (name, image) VALUES ($1, $2) RETURNING id`,
           [vehicleTypeName, req.files?.vehicleTypeImage?.[0]?.path || null]
         );
         vehicleId = vehicleInsert.rows[0].id;
@@ -61,7 +68,7 @@ export const createRequirementForm = async (req, res) => {
     }
 
     if (!stockObjectId) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(400).json({
         success: false,
         message: "Stock ID is required. Please select an existing stock.",
@@ -69,16 +76,15 @@ export const createRequirementForm = async (req, res) => {
     }
 
     if (!rawMaterialId || !vehicleId || !stockObjectId) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(400).json({
         success: false,
         message: "Raw Material ID, Vehicle ID, and Stock ID are required.",
       });
     }
 
-
     const insertQuery = `
-      INSERT INTO inventory.requirement_forms (
+      INSERT INTO ${REQUIREMENT_FORMS_TABLE} (
         raw_material_type_id,
         quantity_value,
         quantity_photo,
@@ -127,16 +133,15 @@ export const createRequirementForm = async (req, res) => {
 
     const result = await client.query(insertQuery, values);
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     res.status(201).json({
       success: true,
       message: "Requirement form created successfully",
       data: result.rows[0],
     });
-
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     console.error("Error creating requirement form:", error);
     res.status(500).json({
       success: false,
@@ -156,10 +161,10 @@ export const getAllRequirements = async (req, res) => {
         row_to_json(rm) AS raw_material,
         row_to_json(v) AS vehicle,
         row_to_json(s) AS stock
-      FROM inventory.requirement_forms rf
-      JOIN inventory.raw_materials rm ON rf.raw_material_type_id = rm.id
-      JOIN inventory.vehicles v ON rf.vehicle_type_id = v.id
-      JOIN inventory.stock s ON rf.stock_id = s.id
+      FROM ${REQUIREMENT_FORMS_TABLE} rf
+      JOIN ${RAW_MATERIALS_TABLE} rm ON rf.raw_material_type_id = rm.id
+      JOIN ${VEHICLES_TABLE} v ON rf.vehicle_type_id = v.id
+      JOIN ${STOCK_TABLE} s ON rf.stock_id = s.id
       ORDER BY rf.created_at DESC
     `);
     res.status(200).json({ success: true, data: result.rows });
@@ -167,4 +172,3 @@ export const getAllRequirements = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

@@ -118,13 +118,137 @@
 
 
 
+// import pool from '../utils/db.js'; 
+
+// const SCHEMA_TABLE = "inventory.vehicles";
+
+// export const createVehicle = async (req, res) => {
+//     console.log("req.body:", req.body);
+//   console.log("req.file:", req.file);
+//   try {
+//     const { name, status } = req.body;
+//     const image = req.file ? req.file.path : null;
+
+//     if (!name || !image) {
+//       return res.status(400).json({ success: false, message: "Name and image are required." });
+//     }
+
+//     const insertQuery = `
+//       INSERT INTO inventory.vehicles (name, image, status)
+//       VALUES ($1, $2, $3)
+//       RETURNING *;
+//     `;
+
+//     const values = [name, image, status || 'active'];
+
+//     const result = await pool.query(insertQuery, values);
+
+//     res.status(201).json({ success: true, data: result.rows[0] });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// export const getAllVehicles = async (req, res) => {
+//   try {
+//     const selectQuery = `SELECT * FROM inventory.vehicles ORDER BY created_at DESC`;
+//     const result = await pool.query(selectQuery);
+//     res.status(200).json({ success: true, data: result.rows });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// export const getVehicleById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const selectQuery = `SELECT * FROM inventory.vehicles WHERE id = $1`;
+//     const result = await pool.query(selectQuery, [id]);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ success: false, message: "Vehicle not found." });
+//     }
+
+//     res.status(200).json({ success: true, data: result.rows[0] });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// export const updateVehicle = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { name, status } = req.body;
+//     const image = req.file ? req.file.path : undefined;
+
+//     const fields = [];
+//     const values = [];
+//     let idx = 1;
+
+//     if (name) {
+//       fields.push(`name = $${idx++}`);
+//       values.push(name);
+//     }
+//     if (status) {
+//       fields.push(`status = $${idx++}`);
+//       values.push(status);
+//     }
+//     if (image) {
+//       fields.push(`image = $${idx++}`);
+//       values.push(image);
+//     }
+//     fields.push(`updated_at = NOW()`);
+
+//     if (fields.length === 1) { 
+//       return res.status(400).json({ success: false, message: "No fields to update" });
+//     }
+
+//     const updateQuery = `
+//       UPDATE inventory.vehicles SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *;
+//     `;
+
+//     values.push(id);
+
+//     const result = await pool.query(updateQuery, values);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ success: false, message: "Vehicle not found." });
+//     }
+
+//     res.status(200).json({ success: true, data: result.rows[0] });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// export const deleteVehicleInfo = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const deleteQuery = `DELETE FROM inventory.vehicles WHERE id = $1 RETURNING *;`;
+//     const result = await pool.query(deleteQuery, [id]);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ success: false, message: "Vehicle information not found." });
+//     }
+
+//     res.status(200).json({ success: true, message: "Vehicle information deleted successfully." });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
 import pool from '../utils/db.js'; 
 
-export const createVehicle = async (req, res) => {
-  // try {
+const SCHEMA_TABLE = "inventory.vehicles";
 
-    console.log("req.body:", req.body);
+export const createVehicle = async (req, res) => {
+  console.log("req.body:", req.body);
   console.log("req.file:", req.file);
+
   try {
     const { name, status } = req.body;
     const image = req.file ? req.file.path : null;
@@ -134,25 +258,23 @@ export const createVehicle = async (req, res) => {
     }
 
     const insertQuery = `
-      INSERT INTO inventory.vehicles (name, image, status)
+      INSERT INTO ${SCHEMA_TABLE} (name, image, status)
       VALUES ($1, $2, $3)
       RETURNING *;
     `;
-
     const values = [name, image, status || 'active'];
 
     const result = await pool.query(insertQuery, values);
-
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// GET all vehicles
+
 export const getAllVehicles = async (req, res) => {
   try {
-    const selectQuery = `SELECT * FROM inventory.vehicles ORDER BY created_at DESC`;
+    const selectQuery = `SELECT * FROM ${SCHEMA_TABLE} ORDER BY created_at DESC`;
     const result = await pool.query(selectQuery);
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
@@ -160,24 +282,22 @@ export const getAllVehicles = async (req, res) => {
   }
 };
 
-// GET vehicle by id
+
 export const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const selectQuery = `SELECT * FROM inventory.vehicles WHERE id = $1`;
+    const selectQuery = `SELECT * FROM ${SCHEMA_TABLE} WHERE id = $1`;
     const result = await pool.query(selectQuery, [id]);
 
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({ success: false, message: "Vehicle not found." });
     }
-
     res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// UPDATE vehicle by id
 export const updateVehicle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -188,33 +308,25 @@ export const updateVehicle = async (req, res) => {
     const values = [];
     let idx = 1;
 
-    if (name) {
-      fields.push(`name = $${idx++}`);
-      values.push(name);
-    }
-    if (status) {
-      fields.push(`status = $${idx++}`);
-      values.push(status);
-    }
-    if (image) {
-      fields.push(`image = $${idx++}`);
-      values.push(image);
-    }
+    if (name) { fields.push(`name = $${idx++}`); values.push(name); }
+    if (status) { fields.push(`status = $${idx++}`); values.push(status); }
+    if (image) { fields.push(`image = $${idx++}`); values.push(image); }
     fields.push(`updated_at = NOW()`);
 
-    if (fields.length === 1) { // only updated_at added but no other fields
+    if (fields.length === 1) {
       return res.status(400).json({ success: false, message: "No fields to update" });
     }
 
     const updateQuery = `
-      UPDATE inventory.vehicles SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *;
+      UPDATE ${SCHEMA_TABLE} 
+      SET ${fields.join(', ')} 
+      WHERE id = $${idx} 
+      RETURNING *;
     `;
-
     values.push(id);
 
     const result = await pool.query(updateQuery, values);
-
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({ success: false, message: "Vehicle not found." });
     }
 
@@ -224,14 +336,14 @@ export const updateVehicle = async (req, res) => {
   }
 };
 
-// DELETE vehicle by id
+
 export const deleteVehicleInfo = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleteQuery = `DELETE FROM inventory.vehicles WHERE id = $1 RETURNING *;`;
+    const deleteQuery = `DELETE FROM ${SCHEMA_TABLE} WHERE id = $1 RETURNING *;`;
     const result = await pool.query(deleteQuery, [id]);
 
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({ success: false, message: "Vehicle information not found." });
     }
 

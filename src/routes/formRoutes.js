@@ -1,4 +1,3 @@
-// src/routes/formRoutes.js
 import express from "express";
 import { createRequirementForm, getAllRequirements } from "../controllers/formRequirementController.js";
 import upload from "../middlewares/multerUploadImage.js";

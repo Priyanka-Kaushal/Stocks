@@ -1,23 +1,17 @@
-const express = require("express");
-const router = express.Router();
-
-const {
+import express from "express";
+import {
   userAttendance,
   getAllAttendance,
   getAttendanceById,
-  updateAttendance,
+  updateUserAttendance,
   deleteAttendance,
-} = require("../controllers/attendanceController");
+} from "../controllers/attendanceController.js";
+const router = express.Router();
 
-router.post("/userAttendance", userAttendance); 
-
-
+router.post("/userAttendance", userAttendance);
 router.get("/attendance", getAllAttendance);
-
 router.get("/indivualattendance/:id", getAttendanceById);
-
-router.put("/attendanceUpdate/:id", updateAttendance);
-
+router.put("/attendanceUpdate/:id", updateUserAttendance);
 router.delete("/attendanceDelete/:id", deleteAttendance);
 
-module.exports = router;
+export default router;
